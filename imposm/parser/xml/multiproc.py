@@ -16,7 +16,7 @@ import mmap
 import multiprocessing
 import re
 
-from Queue import Empty
+from queue import Empty
 
 from imposm.parser.xml.parser import XMLParser
 from imposm.parser.util import setproctitle
@@ -94,7 +94,7 @@ class XMLMultiProcParser(object):
     def parse(self, stream):
         assert not self.pool
 
-        for _ in xrange(self.pool_size):
+        for _ in range(self.pool_size):
             proc = XMLParserProcess(self.mmap_pool, self.mmap_queue, nodes_callback=self.nodes_callback,
                 coords_callback=self.coords_callback, ways_callback=self.ways_callback,
                 relations_callback=self.relations_callback,
@@ -183,19 +183,20 @@ class XMLChunker(object):
 
     def _skip_header(self):
         for line in self.stream:
+            line = line.decode('utf-8')
             if line.lstrip().startswith('<node '):
-                self._last_line = line
+                self._last_line = line.encode('utf-8')
                 return
 
     def _new_xml_outstream(self):
         self.current_mmap_idx, stream = self.mmap_pool.new()
         stream.seek(0)
-        stream.write("<osm xmlns:xapi='http://www.informationfreeway.org/xapi/0.6'>")
+        stream.write("<osm xmlns:xapi='http://www.informationfreeway.org/xapi/0.6'>".encode('utf-8'))
         return stream
 
     def _finished_xml_outstream(self, last_line, stream):
         if '</osm' not in last_line:
-            stream.write('</osm>\n')
+            stream.write('</osm>\n'.encode('utf-8'))
         return self.current_mmap_idx, stream.tell()
 
     def read(self, mmaps_queue, coords_callback=None):
@@ -212,6 +213,7 @@ class XMLChunker(object):
         split = False
         line = ''
         for line in self.stream:
+            line = line.decode('utf-8')
             if coords_callback:
                 coord_node_match = coord_node_re_match(line)
                 if coord_node_match:
@@ -221,9 +223,9 @@ class XMLChunker(object):
                         coords_callback(coords)
                         coords = []
                 else:
-                    xml_nodes.write(line)
+                    xml_nodes.write(line.encode('utf-8'))
             else:
-                xml_nodes.write(line)
+                xml_nodes.write(line.encode('utf-8'))
             if split:
                 if (line.rstrip().endswith(('</way>', '</node>', '</relation>'))
                     or (coords_callback and coord_node_match)
@@ -256,7 +258,7 @@ if __name__ == '__main__':
                     break
                 count += len(nodes)
                 queue.task_done()
-            print type, count
+            print(type, count)
         return count
 
 
